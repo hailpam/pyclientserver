@@ -43,10 +43,11 @@ class Request(object):
         
         dict = json.loads(sting)
         self.__dict__ = dict
-        
+        self.name = dict['name'] 
+        self.code = dict['code'] 
         
     def __str__(self):
-        print str("request: "+str(self.name)+" - code: "+str(self.code))
+        return str("request: "+str(self.name)+" - code: "+str(self.code))
 
 
 class Data(object):

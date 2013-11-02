@@ -6,7 +6,7 @@ TCP Client requesting and receiving compressed JSON over TCP
 @author: Paolo Maresca <plo.maresca@gmail.com>
 '''
 
-import socket, time, threading
+import socket, time, threading, sys
 
 from  it.pm.model.datamodel import Request, Data, Utility
 from settings import CONTEXT, SERVER_BINDING
@@ -54,12 +54,12 @@ class TCPClient(threading.Thread):
             end = time.time()
             if (self.__isdebug):
                 print "Reception::Time Elapsed::", str(end - start)
-                print "(Compressed) Dimension::", len(response)
+                print "(Compressed) Dimension::", sys.getsizeof(response)
             # Treating compressed data
             result = self.__compression.decompress(response)
             data = Data(False, [], 0)
             data.from_json(result)
-            if (int(data.nrbytes) == len(data.vector)):
+            if (int(data.nrbytes) == sys.getsizeof(data.vector)):
                 print "[TCPClient][run] Integrity is OK"
             print "[TCPClient][run] Data\n", str(data.vector[:2])
         except Exception, e:

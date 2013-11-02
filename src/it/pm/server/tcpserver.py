@@ -6,7 +6,7 @@ Multithreaded TCP Server serving compressed JSON over TCP
 @author: Paolo Maresca <plo.maresca@gmail.com>
 '''
 
-import SocketServer, time
+import SocketServer, time, gzip, sys
 
 from it.pm.model.datamodel import Request, Data, Utility
 from settings import CONTEXT, SERVER_BINDING, TEST_PARAMS
@@ -38,6 +38,7 @@ class TCPRequestHandler(SocketServer.BaseRequestHandler):
         # Get test parameters
         self.__resourcepath = TEST_PARAMS['path']
         self.__filename = TEST_PARAMS['file_name']
+        self.__compressedcontent = CONTEXT['compressed_content']
         # Call father
         BaseRequestHandler.__init__(self, request, client_address, server)
         
@@ -53,27 +54,37 @@ class TCPRequestHandler(SocketServer.BaseRequestHandler):
             data = self.request.recv(1024).strip()
             # Unmarshall the request
             request = Request('', 0)
-            data = request.from_json(data)
+            request.from_json(data)
             # Print data out, if debug
             if (self.__isdebug):
-                print "Received data::", str(data)
+                print "Received data::", str(request)
             # Read lines from a text file
             resource = []
             resource.append(self.__resourcepath)
             resource.append(self.__filename)
-            testfile = open(''.join(resource), 'r')
             # Prepare the response data
             response = Data(True, [], 0)
-            list = testfile.readlines()
+            # Test if compressed content is needed
+            list = []
+            zippedfile = None
+            testfile = None
+            if (self.__compressedcontent):
+                zippedfile = gzip.open(''.join(resource)+".gz", "r+")
+                list = zippedfile.readlines()
+                print "(Compressed) Content size [", sys.getsizeof(list), "]"
+            else:
+                testfile = open(''.join(resource), 'r')
+                list = testfile.readlines()
+                print "(Uncompressed) Content size [", sys.getsizeof(list), "]"
             response.vector = list
-            response.nrbytes = len(list)
+            response.nrbytes = int(sys.getsizeof(list))
             # Marshall JSON representation
             json_str = response.to_json()
             if (self.__isdebug):
-                print "(Original) Dimension::", len(json_str)
+                print "(Original) JSON Dimension::", sys.getsizeof(json_str)
             c_response = self.__compression.compress(json_str)
             if (self.__isdebug):
-                print "(Compressed) Dimension::", len(c_response)
+                print "(Compressed) JSON Dimension::", sys.getsizeof(c_response)
             start = time.time()
             self.request.sendall(c_response)
             print "[TCPRequestHandler][handle] Bunch of compressed data sent back!"
@@ -83,5 +94,8 @@ class TCPRequestHandler(SocketServer.BaseRequestHandler):
         except Exception, e:
             print "Exception upon message reception: ", e
         finally:
-            testfile.close()
+            if (testfile):
+                testfile.close()
+            if (zippedfile):
+                zippedfile.close()
 
