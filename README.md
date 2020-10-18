@@ -22,4 +22,4 @@ To run a test scenarion, proceed as follows:
 
 
 # Versions
-- 1.0 First release: working scenario, ok compression.
+- 0.1 First release: working scenario, ok compression.
