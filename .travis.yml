@@ -5,5 +5,5 @@ python:
 install:
   - make init
 # command to run tests
-test: 
+script: 
   - make test
